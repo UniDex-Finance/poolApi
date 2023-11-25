@@ -74,10 +74,12 @@ async function calculateAPRAndRelatedValues(poolDetails, chainId, tvl, to) {
       days
     );
 
-    aprValues[`APR${days}Day`] = apr.toFixed(2) + "%";
-    aprValues[`TotalReturn${days}Day`] = totalReturn;
-    aprValues[`PnL${days}Day`] = pnl;
-    aprValues[`Fees${days}Day`] = fees;
+    aprValues[`${days}DayData`] = {
+      APR: apr.toFixed(2) + "%",
+      TotalReturn: totalReturn,
+      PnL: pnl,
+      Fees: fees,
+    };
   }
 
   return aprValues;
