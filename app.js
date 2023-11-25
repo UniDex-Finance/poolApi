@@ -35,11 +35,9 @@ async function fetchTVL(poolAddress, tokenAddress, decimals, provider) {
   try {
     if (tokenAddress === ADDRESS_ZERO) {
       tvl = await provider.getBalance(poolAddress);
-      console.log(`Native token balance fetched for ${poolAddress}: ${tvl}`);
     } else {
       const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
       tvl = await tokenContract.balanceOf(poolAddress);
-      console.log(`ERC20 token balance fetched for ${poolAddress}: ${tvl}`);
     }
   } catch (error) {
     console.error(`Error fetching TVL for pool ${poolAddress}: ${error}`);
@@ -56,13 +54,11 @@ async function calculateAPRForPools() {
 
   let response = {};
   for (const [chainName, chainDetails] of Object.entries(chainConfigurations)) {
-    console.log(`Processing chain: ${chainName}`);
     const provider = createWeb3Instance(chainName);
     response[chainName] = {};
 
     for (const [poolAddress, poolDetails] of Object.entries(chainDetails.pools)) {
       try {
-        console.log(`Processing pool: ${poolAddress}`);
         const contract = new ethers.Contract(poolAddress, contractABI, provider);
         const contractData = await fetchContractData(contract, provider, poolAddress, poolDetails);
 
@@ -135,8 +131,6 @@ async function fetchContractData(contract, provider, poolAddress, poolDetails) {
       WithdrawFee: formatNumber(withdrawFee, 100, 1),
       Currency: checksummedCurrency,
     };
-  
-    console.log(`Response Data for Pool ${poolAddress}:`, responseData);
     return responseData;
 
   } catch (error) {
