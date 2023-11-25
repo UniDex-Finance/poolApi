@@ -4,17 +4,51 @@ const { createWeb3Instance } = require("./services/blockchain");
 const { fetchPoolData } = require("./services/graphql");
 const { toChecksumAddress, formatNumber } = require("./utils/helpers");
 const contractABI = require("./abi.json"); // you can find this on our git or any block explorer
+const erc20Abi = require("./erc20abi.json");
 const chainConfigurations = require("./config/chainConfigurations");
 
 const app = express();
 const PORT = 3000;
 const REFRESH_INTERVAL = 600000; // 10 minutes
+const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 
 function getDateDaysAgo(days) {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.getTime() / 1000;
 }
+
+function formatTokenValue(value, decimals) {
+  const valueBigInt = BigInt(value);
+  const divisor = BigInt(10 ** decimals);
+  const beforeDecimal = valueBigInt / divisor;
+  const afterDecimal = valueBigInt % divisor;
+  
+  return beforeDecimal.toString() + '.' + afterDecimal.toString().padStart(decimals, '0');
+}
+
+
+
+async function fetchTVL(poolAddress, tokenAddress, decimals, provider) {
+  let tvl;
+
+  try {
+    if (tokenAddress === ADDRESS_ZERO) {
+      tvl = await provider.getBalance(poolAddress);
+      console.log(`Native token balance fetched for ${poolAddress}: ${tvl}`);
+    } else {
+      const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
+      tvl = await tokenContract.balanceOf(poolAddress);
+      console.log(`ERC20 token balance fetched for ${poolAddress}: ${tvl}`);
+    }
+  } catch (error) {
+    console.error(`Error fetching TVL for pool ${poolAddress}: ${error}`);
+    return "0";
+  }
+
+  return formatTokenValue(tvl.toString(), decimals);
+}
+
 
 async function calculateAPRForPools() {
   const currentTime = new Date();
@@ -26,38 +60,27 @@ async function calculateAPRForPools() {
     const provider = createWeb3Instance(chainName);
     response[chainName] = {};
 
-    for (const [poolAddress, poolDetails] of Object.entries(
-      chainDetails.pools
-    )) {
+    for (const [poolAddress, poolDetails] of Object.entries(chainDetails.pools)) {
       try {
         console.log(`Processing pool: ${poolAddress}`);
-        const contract = new ethers.Contract(
-          poolAddress,
-          contractABI,
-          provider
-        );
-        const contractData = await fetchContractData(contract);
+        const contract = new ethers.Contract(poolAddress, contractABI, provider);
+        const contractData = await fetchContractData(contract, provider, poolAddress, poolDetails);
 
         let tvl = contractData.TVL ? parseFloat(contractData.TVL) : 0;
 
         response[chainName][poolAddress] = {
           ...poolDetails,
           ...contractData,
-          ...(await calculateAPRAndRelatedValues(
-            poolDetails,
-            chainDetails.chainId,
-            tvl,
-            to
-          )),
+          ...(await calculateAPRAndRelatedValues(poolDetails, chainDetails.chainId, tvl, to)),
         };
       } catch (error) {
         console.error(`Error processing pool ${poolAddress}:`, error);
       }
     }
   }
-
   return response;
 }
+
 
 async function calculateAPRAndRelatedValues(poolDetails, chainId, tvl, to) {
   const aprValues = {};
@@ -85,20 +108,26 @@ async function calculateAPRAndRelatedValues(poolDetails, chainId, tvl, to) {
   return aprValues;
 }
 
-async function fetchContractData(contract) {
+async function fetchContractData(contract, provider, poolAddress, poolDetails) {
   try {
     const utilization = await contract.getUtilization();
     const minDepositTime = await contract.minDepositTime();
     const openInterestRaw = await contract.openInterest();
-    const totalSupplyRaw = await contract.totalSupply();
     const withdrawFee = await contract.withdrawFee();
     const currency = await contract.currency();
 
     const checksummedCurrency = toChecksumAddress(currency);
     const openInterest = formatNumber(openInterestRaw, Math.pow(10, 18), 6);
-    const tvl = Number(totalSupplyRaw.toString()) / 10 ** 18;
 
-    return {
+    let tvl;
+    if (currency === ADDRESS_ZERO) {
+        tvl = await provider.getBalance(poolAddress);
+        tvl = formatTokenValue(tvl.toString(), 18);
+    } else {
+        tvl = await fetchTVL(poolAddress, currency, poolDetails.decimals, provider);
+    }
+
+    const responseData = {
       Utilization: formatNumber(utilization, 100, 2),
       MinimumDepositTime: minDepositTime.toString(),
       OpenInterest: openInterest,
@@ -106,8 +135,12 @@ async function fetchContractData(contract) {
       WithdrawFee: formatNumber(withdrawFee, 100, 1),
       Currency: checksummedCurrency,
     };
+  
+    console.log(`Response Data for Pool ${poolAddress}:`, responseData);
+    return responseData;
+
   } catch (error) {
-    console.error(`Failed to fetch data for contract:`, error);
+    console.error(`Failed to fetch data for contract at ${poolAddress}:`, error);
     throw error;
   }
 }
