@@ -6,6 +6,7 @@ const { toChecksumAddress, formatNumber } = require("./utils/helpers");
 const contractABI = require("./abi.json"); // you can find this on our git or any block explorer
 const erc20Abi = require("./erc20abi.json");
 const chainConfigurations = require("./config/chainConfigurations");
+const cors = require('cors');
 
 const app = express();
 const PORT = 3000;
@@ -172,7 +173,6 @@ async function refreshData() {
   try {
     const data = await calculateAPRForPools();
     cachedData = data;
-    console.log("Data refreshed.");
   } catch (error) {
     console.error("Error refreshing data: ", error);
   }
@@ -180,6 +180,7 @@ async function refreshData() {
 
 refreshData();
 setInterval(refreshData, REFRESH_INTERVAL);
+app.use(cors());
 
 app.get("/pools", async (req, res) => {
   if (Object.keys(cachedData).length === 0) {
