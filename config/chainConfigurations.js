@@ -28,6 +28,19 @@ module.exports = {
           },
         },
       },
+      evmos: {
+        rpcUrl: process.env.EVMOS_RPC_URL,
+        chainId: '9001',
+        pools: {
+          "0x21708707f03A19C3a4ea5E1a132B5cF96b86F294": {
+            logo: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stride/images/stevmos.png",
+            currency: "0x2C68D1d6aB986Ff4640b51e1F14C716a076E44C4",
+            name: "STEVMOS Pool",
+            feePercentage: 35,
+            decimals: 18,
+          },
+        },
+      },
       base: {
         rpcUrl: process.env.BASE_RPC_URL,
         chainId: '8453',

@@ -8,7 +8,8 @@ const config = {
         fantom: process.env.FANTOM_RPC_URL,
         scroll: process.env.SCROLL_RPC_URL,
         metis: process.env.METIS_RPC_URL,
-        arbitrum: process.env.ARBITRUM_RPC_URL
+        arbitrum: process.env.ARBITRUM_RPC_URL,
+        evmos: process.env.EVMOS_RPC_URL,
     },
     graphqlEndpoint: process.env.GRAPHQL_ENDPOINT
 };
