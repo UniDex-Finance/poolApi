@@ -197,19 +197,19 @@ calculateTotalAPR().then(totalAPR => {
 let cachedData = {};
 
 async function refreshData() {
-    try {
-        const poolData = await calculateAPRForPools();
-        const unidexTokenStats = await calculateTotalAPR();
+  try {
+      const poolData = await calculateAPRForPools();
+      const unidexTokenStatsAPR = await calculateTotalAPR();
 
-        cachedData = {
-            pool: poolData,
-            unidexTokenStats: {
-                APR: unidexTokenStats.toFixed(2) + '%'
-            }
-        };
-    } catch (error) {
-        console.error("Error refreshing data: ", error);
-    }
+      cachedData = {
+          ...poolData, // Spread the pool data
+          unidexTokenStats: {
+              APR: unidexTokenStatsAPR.toFixed(2) + '%'
+          }
+      };
+  } catch (error) {
+      console.error("Error refreshing data: ", error);
+  }
 }
 
 refreshData();
@@ -224,7 +224,6 @@ app.get("/pools", async (req, res) => {
       res.json(cachedData);
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
