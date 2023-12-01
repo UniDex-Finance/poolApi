@@ -7,6 +7,8 @@ const contractABI = require("./abi.json"); // you can find this on our git or an
 const erc20Abi = require("./erc20abi.json");
 const chainConfigurations = require("./config/chainConfigurations");
 const cors = require('cors');
+const { fetch30DayFees } = require('./services/graphql');
+const axios = require("axios");
 
 const app = express();
 const PORT = 3000;
@@ -167,28 +169,62 @@ function calculateApr(dayProducts, poolDetails, poolChainId, tvl, days) {
   return [apr, totalReturn, totalPnL, totalFees];
 }
 
+
+async function calculateTotalAPR() {
+  try {
+      const thirtyDayFees = await fetch30DayFees();
+      const annualizedFees = thirtyDayFees * 12;
+
+      const priceResponse = await axios.get('https://coins.llama.fi/prices/current/optimism:0x28b42698Caf46B4B012CF38b6C75867E0762186D');
+      const tokenPrice = priceResponse.data.coins['optimism:0x28b42698Caf46B4B012CF38b6C75867E0762186D'].price;
+      const value = tokenPrice * 4000000;
+
+      const totalAPR = (annualizedFees / value) * 100;
+      return totalAPR;
+  } catch (error) {
+      console.error("Error calculating total APR: ", error);
+      throw error;
+  }
+}
+
+calculateTotalAPR().then(totalAPR => {
+  // left blank but we can log here if we want
+}).catch(error => {
+  console.error(error);
+});
+
+
 let cachedData = {};
 
 async function refreshData() {
-  try {
-    const data = await calculateAPRForPools();
-    cachedData = data;
-  } catch (error) {
-    console.error("Error refreshing data: ", error);
-  }
+    try {
+        const poolData = await calculateAPRForPools();
+        const unidexTokenStats = await calculateTotalAPR();
+
+        cachedData = {
+            pool: poolData,
+            unidexTokenStats: {
+                APR: unidexTokenStats.toFixed(2) + '%'
+            }
+        };
+    } catch (error) {
+        console.error("Error refreshing data: ", error);
+    }
 }
 
 refreshData();
 setInterval(refreshData, REFRESH_INTERVAL);
+
 app.use(cors());
 
 app.get("/pools", async (req, res) => {
   if (Object.keys(cachedData).length === 0) {
-    res.status(503).send("Data is still loading. Please try again in a few moments.");
+      res.status(503).send("Data is still loading. Please try again in a few moments.");
   } else {
-    res.json(cachedData);
+      res.json(cachedData);
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
