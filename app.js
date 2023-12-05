@@ -147,6 +147,8 @@ function calculateApr(dayProducts, poolDetails, poolChainId, tvl, days) {
   let totalFees = 0;
   const feePercentage = poolDetails.feePercentage / 100;
 
+  const timeframeIncentives = poolDetails.dailyTokenIncentives * days;
+
   dayProducts.forEach((product) => {
       const [productCurrency, productChainId] = product._id.split(":").slice(1, 3);
       if (toChecksumAddress(productCurrency) === poolDetails.currency && productChainId === poolChainId.toString()) {
@@ -155,18 +157,13 @@ function calculateApr(dayProducts, poolDetails, poolChainId, tvl, days) {
       }
   });
 
-  // Calculate annualized incentives
-  const annualIncentives = poolDetails.tokenweeklyIncentives ? poolDetails.tokenweeklyIncentives * 52 : 0;
+  const totalReturnWithIncentives = (totalPnL < 0 ? totalFees + Math.abs(totalPnL) : totalFees - totalPnL) + timeframeIncentives;
 
-  // Total return including incentives
-  const totalReturn = totalPnL < 0 ? totalFees + Math.abs(totalPnL) + annualIncentives : totalFees - totalPnL + annualIncentives;
-
-  const annualizedReturn = totalReturn * (365 / days);
+  const annualizedReturn = totalReturnWithIncentives * (365 / days);
   const apr = tvl > 0 ? (annualizedReturn / tvl) * 100 : 0;
 
-  return [apr, totalReturn, totalPnL, totalFees];
+  return [apr, totalReturnWithIncentives, totalPnL, totalFees];
 }
-
 
 async function calculateTotalAPR() {
   try {
