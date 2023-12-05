@@ -13,6 +13,13 @@ module.exports = {
             feePercentage: 35,
             decimals: 18,
           },
+          "0x68A4cF26705B3cEaB49d1C99DE98F3Db28ee767E": {
+            logo: "https://raw.githubusercontent.com/Pymmdrza/Cryptocurrency_Logos/mainx/SVG/eth.svg",
+            currency: ADDRESS_ZERO,
+            name: "ETH Pool",
+            feePercentage: 35,
+            decimals: 18,
+          },
         },
       },
       zksync: {
