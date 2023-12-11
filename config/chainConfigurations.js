@@ -94,6 +94,16 @@ module.exports = {
             description: "BSWAP Standard Pool",
             protocol: "Baseswap",
           },
+          "0x0E0576Dd3bF577a11aFE19b229fd7AF3185e3797": {
+            logo: "https://app.citadelswap.xyz/favicon.ico",
+            currency: "0x7233062d88133b5402d39d62bfa23a1b6c8d0898",
+            name: "FORT Pool",
+            feePercentage: 50,
+            decimals: 18,
+            dailyTokenIncentives: 0,
+            description: "FORT Whitelabel Pool",
+            protocol: "CitaldelSwap",
+          },
         },
       },
       fantom: {
