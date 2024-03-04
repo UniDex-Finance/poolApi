@@ -10,6 +10,7 @@ const config = {
         metis: process.env.METIS_RPC_URL,
         arbitrum: process.env.ARBITRUM_RPC_URL,
         evmos: process.env.EVMOS_RPC_URL,
+        bsc: process.env.BSC_RPC_URL,
     },
     graphqlEndpoint: process.env.GRAPHQL_ENDPOINT
 };
